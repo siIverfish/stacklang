@@ -1,0 +1,10 @@
+[package]
+name = "stacklang"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+derive_more = "0.99.17"
+itertools = "0.12.1"
+structstruck = "0.4.1"
+thiserror = "1.0.59"
