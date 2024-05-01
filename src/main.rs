@@ -3,8 +3,10 @@ use stacklang::scanner::Processable;
 use stacklang::stack::Executable;
 
 fn main() {
-    let input = "(+ 1 1)";
+    let input = "(+ (+ 1 1) 1)";
     let result = input.tokens().process().execute();
+
+    dbg!(&result);
 
     let only_result = result.into_iter().next().unwrap();
 

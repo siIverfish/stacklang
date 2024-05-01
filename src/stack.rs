@@ -9,7 +9,9 @@ impl<I: Iterator<Item = Result<Token, ScanError>>> Executable for I {
         let mut stack = ExecutionStack::default();
 
         for item in self {
+            println!("Pushing element {:?}...", &item);
             stack.push(item);
+            dbg!(&stack);
         }
 
         stack.stack
@@ -79,6 +81,7 @@ impl ExecutionStack {
             if let Some(Filicide) = filicide_order {
                 self.stack.append(&mut found_child.stack);
                 self.apply_functions();
+                self.child = None;
             }
 
             None
