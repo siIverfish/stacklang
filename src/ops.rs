@@ -2,17 +2,16 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use crate::function::{Function, Token};
-use crate::function::RuntimeError;
 use crate::function::FunctionMetadata;
 
 macro_rules! impl_tk_function {
     ($name:ident, $tk_type:ty, $f:path) => {
-        pub(crate) fn $name(x: Token) -> Result<Token, RuntimeError> {
-            let addend_one: $tk_type = x.downcast::<$tk_type>()?;
+        pub(crate) fn $name(this: Token, addend_one_token: Token) -> Result<Token, (Token, Token)> {
+            let (_, addend_one) = this.downcast_arg::<$tk_type>(addend_one_token)?;
 
-            Ok(Token::Function(Function::from(
-                move |tk: Token| {
-                    let addend_two: $tk_type = tk.downcast::<$tk_type>()?;
+            Ok(Token::Function(Function::from_fn(
+                move |this: Token, addend_two_token: Token| {
+                    let (_, addend_two) = this.downcast_arg::<$tk_type>(addend_two_token)?;
                     let result = $f(addend_one, addend_two);
                     Ok(Token::Data(Box::new(result)))
                 }
@@ -37,9 +36,9 @@ macro_rules! impl_num_ops {
 pub(crate) mod tk {
     use super::*;
 
-    impl_num_ops! { i8, i8 }
-    impl_num_ops! { i16, i16 }
-    impl_num_ops! { i32, i32 }
+    // impl_num_ops! { i8, i8 }
+    // impl_num_ops! { i16, i16 }
+    // impl_num_ops! { i32, i32 }
     impl_num_ops! { i64, i64 }
 }
 
