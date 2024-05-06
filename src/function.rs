@@ -1,46 +1,52 @@
-use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[derive(Debug, derive_more::From)]
-pub enum Token {
-    Function(Function),
-    Data(Box<dyn std::any::Any + Sync + Send>),
+structstruck::strike! {
+    #[strikethrough[derive(Debug)]]
+    pub enum Token {
+        Function(Function),
+        Datum(pub enum DataItem {
+            Integer(i64),
+            ScanError(crate::scanner::ScanError),
+            Pair(Box<(Token, Token)>),
+        }),
+    }
 }
+
 
 impl Token {
     pub(crate) fn apply(self, rhs: Token) -> Result<Token, (Token, Token)> {
         match self {
             // this clone should be very cheap, as functions are just `Arc`s
             Token::Function(ref x) => (x.0.clone().f)(self, rhs),
-            Token::Data(_) => match rhs {
-                Token::Data(_) => Err((self, rhs)),
+            Token::Datum(_) => match rhs {
+                Token::Datum(_) => Err((self, rhs)),
                 other => other.apply(self),
             },
         }
     }
 
-    pub fn downcast<T: 'static>(self) -> Result<T, Token> {
-        let data: Box<dyn std::any::Any + Send + Sync> = match self {
-            Token::Data(data) => data,
-            other => return Err(other),
-        };
+    // pub fn downcast<T: 'static>(self) -> Result<T, Token> {
+    //     let data: Box<dyn std::any::Any + Send + Sync> = match self {
+    //         Token::Datum(data) => data,
+    //         other => return Err(other),
+    //     };
 
-        data.downcast::<T>()
-            .map(|x| *x)
-            .map_err(Token::Data)
-    }
+    //     data.downcast::<T>()
+    //         .map(|x| *x)
+    //         .map_err(Token::Datum)
+    // }
 
-    pub fn downcast_arg<T: 'static>(self, arg: Token) -> Result<(Token, T), (Token, Token)> {
-        match arg.downcast::<T>() {
-            Ok(downcasted_arg) => Ok ((self, downcasted_arg)),
-            Err(arg)       => Err((self, arg)),
-        }
-    }
+    // pub fn downcast_arg<T: 'static>(self, arg: Token) -> Result<(Token, T), (Token, Token)> {
+    //     match arg.downcast::<T>() {
+    //         Ok(downcasted_arg) => Ok ((self, downcasted_arg)),
+    //         Err(arg)       => Err((self, arg)),
+    //     }
+    // }
 
-    pub fn of_data(data: impl Any + Send + Sync) -> Self {
-        Token::Data(Box::new(data))
-    }
+    // pub fn of_data(data: impl Any + Send + Sync) -> Self {
+    //     Token::Datum(Box::new(data))
+    // }
 }
 
 #[derive(Debug, Clone)]

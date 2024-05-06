@@ -1,19 +1,21 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use crate::function::{Function, Token};
+use crate::function::{Function, Token::*, Token, DataItem::*};
 use crate::function::FunctionMetadata;
 
 macro_rules! impl_tk_function {
     ($name:ident, $tk_type:ty, $f:path) => {
         pub(crate) fn $name(this: Token, addend_one_token: Token) -> Result<Token, (Token, Token)> {
-            let (_, addend_one) = this.downcast_arg::<$tk_type>(addend_one_token)?;
+            let Datum(Integer(addend_one)) = addend_one_token 
+                else { return Err((this, addend_one_token)) };
 
             Ok(Token::Function(Function::from_fn(
                 move |this: Token, addend_two_token: Token| {
-                    let (_, addend_two) = this.downcast_arg::<$tk_type>(addend_two_token)?;
+                    let Datum(Integer(addend_two)) = addend_two_token 
+                        else { return Err((this, addend_two_token)) };
                     let result = $f(addend_one, addend_two);
-                    Ok(Token::Data(Box::new(result)))
+                    Ok(Datum(Integer(result)))
                 }
             )))
         }
@@ -85,16 +87,16 @@ impl Builtins {
 
 
 
-macro_rules! impl_token_from_for {
-    ($($t:ty)*) => {
-        $(
-            impl From<$t> for Token {
-                fn from(value: $t) -> Self {
-                    Token::Data(Box::new(value))
-                }
-            }
-        )*
-    }
-}
+// macro_rules! impl_token_from_for {
+//     ($($t:ty)*) => {
+//         $(
+//             impl From<$t> for Token {
+//                 fn from(value: $t) -> Self {
+//                     Token::Datum(Integer(value))
+//                 }
+//             }
+//         )*
+//     }
+// }
 
-impl_token_from_for! { i8 i16 i32 i64 }
+// impl_token_from_for! { i8 i16 i32 i64 }

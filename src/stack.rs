@@ -1,4 +1,5 @@
-use crate::{function::Token, scanner::Directive};
+use crate::scanner::Directive;
+use crate::function::{Token, Token::*, DataItem::*};
 
 pub trait Executable {
     fn execute(self) -> Vec<Token>;
@@ -34,19 +35,20 @@ impl ExecutionStack {
     /// Some functions will return two tokens in the form Token::Data((a, b)).
     /// In this case, both will be added independently to the stack.
     /// 
-    /// This is a special case that is not *necessarily* needed -- one other
+    /// Outdated: This is a special case that is not *necessarily* needed -- one other
     /// solution would be to have a `Pair` type (like pure lc). However,
     /// the `Token` type is using a `Box<dyn Any>` and so cannot derive `Clone`.
     /// If, in the future, I replace the box with a concrete enum tree spelling out all possible data values,
     /// it might be more reasonable to use `Pair`.
+    /// 
+    /// Update: Pair type added, but individually adding pair elements to the stack
+    /// is still the default behavior.
     fn push_application_result_token(&mut self, t: Token) {
-        match t.downcast::<(Token, Token)>() {
-            Ok((a, b)) => {
-                self.push_application_result_token(a);
-                self.push_application_result_token(b);
-            },
-
-            Err(just_one_token) => self.push_monotoken(just_one_token),
+        if let Datum(Pair(box (a, b))) = t {
+            self.push_application_result_token(a);
+            self.push_application_result_token(b);
+        } else {
+            self.push_monotoken(t);
         }
     }
     

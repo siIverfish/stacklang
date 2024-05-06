@@ -12,5 +12,5 @@ fn main() {
 
     let only_result = result.into_iter().next().unwrap();
 
-    let _ = dbg!(only_result.downcast::<i64>());
+    println!("{only_result:?}");
 }

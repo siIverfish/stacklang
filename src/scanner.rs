@@ -1,9 +1,8 @@
 use std::num::ParseIntError;
 
 use crate::tokenizer::Lexeme;
-use crate::function::Token;
+use crate::function::{Token, Token::*, DataItem::*};
 use crate::ops::Builtins;
-use ScanError::*;
 
 #[derive(Debug)]
 pub enum Directive {
@@ -30,13 +29,13 @@ impl<I: Iterator<Item = Lexeme>> Processable for I {
                     "(" => Err(Directive::Begin),
                     ")" => Err(Directive::End  ),
 
-                    other => Ok(Builtins::get(other).unwrap_or_else(|| Token::of_data(Undefined(string))))
+                    other => Ok(Builtins::get(other).unwrap_or_else(|| Datum(ScanError(ScanError::Undefined(string)))))
                 }
 
                 Lexeme::Numeric(string) => 
                     string.parse::<i64>()
-                        .map(Token::from)
-                        .or_else(|_| Ok(Token::of_data(CouldNotParseInteger)))
+                        .map(|i| Datum(Integer(i)))
+                        .or_else(|e| Ok(Datum(ScanError(ScanError::CouldNotParseInteger(e)))))
             })
     }
 }
