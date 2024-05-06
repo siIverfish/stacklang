@@ -17,29 +17,26 @@ pub enum ScanError {
     Undefined(String),
     #[error("Could not parse integer: {0}")]
     CouldNotParseInteger(#[from] ParseIntError),
-    #[error("directive: {0:?}")]
-    Directive(Directive),
 }
 
 pub trait Processable {
-    fn process(self) -> impl Iterator<Item = Result<Token, ScanError>>;
+    fn process(self) -> impl Iterator<Item = Result<Token, Directive>>;
 }
 
 impl<I: Iterator<Item = Lexeme>> Processable for I {
-    fn process(self) -> impl Iterator<Item = Result<Token, ScanError>> {
+    fn process(self) -> impl Iterator<Item = Result<Token, Directive>> {
         self.map(|lexeme| match lexeme {
                 Lexeme::Ident(string)   => match string.as_ref() {
-                    "(" => Err(Directive(Directive::Begin)),
-                    ")" => Err(Directive(Directive::End  )),
+                    "(" => Err(Directive::Begin),
+                    ")" => Err(Directive::End  ),
 
-                    other => Builtins::get(other)
-                        .ok_or(Undefined(string)),
+                    other => Ok(Builtins::get(other).unwrap_or_else(|| Token::of_data(Undefined(string))))
                 }
 
                 Lexeme::Numeric(string) => 
                     string.parse::<i64>()
                         .map(Token::from)
-                        .map_err(CouldNotParseInteger),
+                        .or_else(|_| Ok(Token::of_data(CouldNotParseInteger)))
             })
     }
 }

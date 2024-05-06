@@ -1,10 +1,10 @@
-use crate::{function::Token, scanner::{Directive, ScanError}};
+use crate::{function::Token, scanner::Directive};
 
 pub trait Executable {
     fn execute(self) -> Vec<Token>;
 }
 
-impl<I: Iterator<Item = Result<Token, ScanError>>> Executable for I {
+impl<I: Iterator<Item = Result<Token, Directive>>> Executable for I {
     fn execute(self) -> Vec<Token> {
         let mut stack = ExecutionStack::default();
 
@@ -75,7 +75,7 @@ impl ExecutionStack {
         match directive {
             Directive::End   => Err(Filicide),
             Directive::Begin => {
-                self.child = Some(Box::new(Self::default()));
+                self.child = Some(Default::default());
                 Ok(())
             },
         }
@@ -103,14 +103,7 @@ impl ExecutionStack {
         Ok(())
     }
 
-    fn push_newly_scanned(&mut self, elt: Result<Token, ScanError>) {
-        let elt = elt.map_err(|scan_error| match scan_error {
-            ScanError::Directive(directive) => directive,
-            // TODO: Error handling: specific Error tokens that other tokens
-            // can use for meaningful computation / "catching" the error
-            other_err => panic!("Could not handle error: {other_err}"),
-        });
-
+    fn push_newly_scanned(&mut self, elt: Result<Token, Directive>) {
         // Discard the `Result<(), Filicide>` value that is only used
         // within `ExecutionStack` logic.
         let _ = self.push_newly_scanned_recursive(elt);

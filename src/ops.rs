@@ -45,7 +45,7 @@ pub(crate) mod tk {
 
 static BUILTINS: OnceLock<Builtins> = OnceLock::new();
 
-pub(crate) struct Builtins(HashMap<&'static str, crate::function::Function>);
+pub(crate) struct Builtins(HashMap<&'static str, Function>);
 
 macro_rules! f {
     ($symbol:expr, $function:expr) => {
@@ -78,7 +78,7 @@ impl Builtins {
     pub(crate) fn get(value: &str) -> Option<Token> {
         Self::global().0
             .get(value)
-            .map(Function::clone)
+            .cloned()
             .map(Token::Function)
     }
 }

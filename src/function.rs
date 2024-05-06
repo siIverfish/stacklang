@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -32,20 +33,25 @@ impl Token {
 
     pub fn downcast_arg<T: 'static>(self, arg: Token) -> Result<(Token, T), (Token, Token)> {
         match arg.downcast::<T>() {
-            Ok(downcasted_value)             => Ok((self, downcasted_value)),
-            Err(failed_downcasted_value) => Err((self, failed_downcasted_value)),
+            Ok(downcasted_arg) => Ok ((self, downcasted_arg)),
+            Err(arg)       => Err((self, arg)),
         }
+    }
+
+    pub fn of_data(data: impl Any + Send + Sync) -> Self {
+        Token::Data(Box::new(data))
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Function(Arc<FunctionInner>);
 
+pub(crate) trait NativeFn = Fn(Token, Token) -> Result<Token, (Token, Token)> + Send + Sync + 'static;
+
 struct FunctionInner {
     meta: FunctionMetadata,
-    f: Box<dyn Fn(Token, Token) -> Result<Token, (Token, Token)> + Send + Sync>,
+    f: Box<dyn NativeFn>,
 }
-
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub(crate) struct FunctionMetadata {
@@ -65,11 +71,11 @@ impl Debug for FunctionInner {
 }
 
 impl Function {
-    pub(crate) fn with_metadata<F: Fn(Token, Token) -> Result<Token, (Token, Token)> + Send + Sync + 'static>(f: F, meta: FunctionMetadata) -> Self {
+    pub(crate) fn with_metadata(f: impl NativeFn, meta: FunctionMetadata) -> Self {
         Self ( Arc::new(FunctionInner { meta, f: Box::new(f) }) )
     }
 
-    pub(crate) fn from_fn<F: Fn(Token, Token) -> Result<Token, (Token, Token)> + Send + Sync + 'static>(f: F) -> Self {
+    pub(crate) fn from_fn(f: impl NativeFn) -> Self {
         Self ( Arc::new(FunctionInner { meta: Default::default(), f: Box::new(f) }) )
     }
 }
