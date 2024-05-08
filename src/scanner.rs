@@ -10,7 +10,7 @@ pub enum Directive {
     End,
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub enum ScanError {
     #[error("unknown ident: {0}")]
     Undefined(String),

@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 structstruck::strike! {
-    #[strikethrough[derive(Debug)]]
+    #[strikethrough[derive(Debug, Clone, PartialEq, Eq)]]
     pub enum Token {
         Function(Function),
         Datum(pub enum DataItem {
@@ -51,6 +51,13 @@ impl Token {
 
 #[derive(Debug, Clone)]
 pub struct Function(Arc<FunctionInner>);
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
+}
+impl Eq for Function {}
 
 pub(crate) trait NativeFn = Fn(Token, Token) -> Result<Token, (Token, Token)> + Send + Sync + 'static;
 
